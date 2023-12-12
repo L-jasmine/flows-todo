@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde_json::Value;
 use webhook_flows::{
     create_endpoint, request_handler,
-    route::{delete, get, post, put, Router},
+    route::{delete, get, post, put, route, RouteError, Router},
     send_response,
 };
 
@@ -24,6 +24,25 @@ async fn handler() {
     router
         .insert("/tasks/:id", vec![put(update_tasks), delete(delete_tasks)])
         .unwrap();
+
+    if let Err(e) = route(router).await {
+        match e {
+            RouteError::NotFound => {
+                send_response(
+                    404,
+                    vec![],
+                    serde_json::to_vec(&serde_json::json!({"err":"No route matched"})).unwrap(),
+                );
+            }
+            RouteError::MethodNotAllowed => {
+                send_response(
+                    405,
+                    vec![],
+                    serde_json::to_vec(&serde_json::json!({"err":"Method not allowed"})).unwrap(),
+                );
+            }
+        }
+    }
 }
 
 fn get_db_url() -> String {
