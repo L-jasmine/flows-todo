@@ -1,0 +1,12 @@
+[package]
+name = "flows-todo"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+lambda-flows = "0.4.1"
+mysql_async_wasi = "0.31.6"
+tokio_wasi = { version="1",features = ["full"]}
+webhook-flows = "0.4.4"
