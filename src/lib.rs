@@ -48,14 +48,6 @@ async fn handler() {
 
 fn get_db_url() -> String {
     if let Ok(url) = std::env::var("DATABASE_URL") {
-        let opts = Opts::from_url(&url).expect("DATABASE_URL invalid");
-        if opts
-            .db_name()
-            .expect("a database name is required")
-            .is_empty()
-        {
-            panic!("database name is empty");
-        }
         url
     } else {
         "mysql://root:pass@127.0.0.1:3306/mysql".into()
@@ -79,6 +71,17 @@ struct Task {
     completed: bool,
 }
 
+fn ok<T: serde::Serialize>(value: &T) {
+    send_response(
+        200,
+        vec![(
+            String::from("content-type"),
+            String::from("application/json; charset=UTF-8"),
+        )],
+        serde_json::to_vec(value).unwrap(),
+    )
+}
+
 async fn add_tasks(_headers: Vec<(String, String)>, _qry: HashMap<String, Value>, body: Vec<u8>) {
     let mut conn = get_conn().await.unwrap();
 
@@ -89,22 +92,8 @@ async fn add_tasks(_headers: Vec<(String, String)>, _qry: HashMap<String, Value>
         .ignore(&mut conn)
         .await
     {
-        Ok(_) => send_response(
-            200,
-            vec![(
-                String::from("content-type"),
-                String::from("application/json; charset=UTF-8"),
-            )],
-            serde_json::to_vec(&task).unwrap(),
-        ),
-        Err(e) => send_response(
-            200,
-            vec![(
-                String::from("content-type"),
-                String::from("application/json; charset=UTF-8"),
-            )],
-            serde_json::json!({"err":e.to_string()}).to_string().into(),
-        ),
+        Ok(_) => ok(&task),
+        Err(e) => ok(&serde_json::json!({"err":e.to_string()})),
     }
 }
 
@@ -120,22 +109,8 @@ async fn update_tasks(_headers: Vec<(String, String)>, qry: HashMap<String, Valu
         .ignore(&mut conn)
         .await
     {
-        Ok(_) => send_response(
-            200,
-            vec![(
-                String::from("content-type"),
-                String::from("application/json; charset=UTF-8"),
-            )],
-            serde_json::to_vec(&task).unwrap(),
-        ),
-        Err(e) => send_response(
-            200,
-            vec![(
-                String::from("content-type"),
-                String::from("application/json; charset=UTF-8"),
-            )],
-            serde_json::json!({"err":e.to_string()}).to_string().into(),
-        ),
+        Ok(_) => ok(&task),
+        Err(e) => ok(&serde_json::json!({"err":e.to_string()})),
     }
 }
 
@@ -153,22 +128,8 @@ async fn delete_tasks(
         .ignore(&mut conn)
         .await
     {
-        Ok(_) => send_response(
-            200,
-            vec![(
-                String::from("content-type"),
-                String::from("application/json; charset=UTF-8"),
-            )],
-            serde_json::json!({"id":id}).to_string().into(),
-        ),
-        Err(e) => send_response(
-            200,
-            vec![(
-                String::from("content-type"),
-                String::from("application/json; charset=UTF-8"),
-            )],
-            serde_json::json!({"err":e.to_string()}).to_string().into(),
-        ),
+        Ok(_) => ok(&serde_json::json!({"id":id})),
+        Err(e) => ok(&serde_json::json!({"err":e.to_string()})),
     }
 }
 
@@ -185,12 +146,5 @@ async fn query(_headers: Vec<(String, String)>, _qry: HashMap<String, Value>, _b
         .await
         .unwrap();
 
-    send_response(
-        200,
-        vec![(
-            String::from("content-type"),
-            String::from("application/json; charset=UTF-8"),
-        )],
-        serde_json::to_vec(&tasks).unwrap(),
-    )
+    ok(&tasks)
 }
