@@ -99,13 +99,8 @@ async fn add_tasks(_headers: Vec<(String, String)>, _qry: HashMap<String, Value>
 
 async fn update_tasks(_headers: Vec<(String, String)>, qry: HashMap<String, Value>, body: Vec<u8>) {
     log::debug!("qry={qry:?}");
-    let id: u32 = qry
-        .get("id")
-        .expect("id")
-        .as_str()
-        .expect("as str")
-        .parse()
-        .expect("parse to u32");
+    let id: u32 = qry.get("id").unwrap().as_str().unwrap().parse().unwrap();
+
     let mut task: Task = serde_json::from_slice(&body).unwrap();
 
     task.id = id;
@@ -127,13 +122,7 @@ async fn delete_tasks(
     _body: Vec<u8>,
 ) {
     log::debug!("qry={qry:?}");
-    let id: u32 = qry
-        .get("id")
-        .expect("id")
-        .as_str()
-        .expect("as str")
-        .parse()
-        .expect("parse to u32");
+    let id: u32 = qry.get("id").unwrap().as_str().unwrap().parse().unwrap();
     let mut conn = get_conn().await.unwrap();
 
     match r"delete from tasks where id = :id"
