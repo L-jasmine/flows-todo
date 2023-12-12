@@ -73,6 +73,7 @@ async fn get_conn() -> Result<Conn> {
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct Task {
+    #[serde(default)]
     id: u32,
     description: String,
     completed: bool,
