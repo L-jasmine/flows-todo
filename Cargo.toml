@@ -5,6 +5,10 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
 [dependencies]
 mysql_async_wasi = "0.31.6"
 tokio_wasi = { version="1",features = ["full"]}
