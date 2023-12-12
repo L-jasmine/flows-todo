@@ -98,6 +98,7 @@ async fn add_tasks(_headers: Vec<(String, String)>, _qry: HashMap<String, Value>
 }
 
 async fn update_tasks(_headers: Vec<(String, String)>, qry: HashMap<String, Value>, body: Vec<u8>) {
+    log::debug!("qry={qry:?}");
     let id = qry.get("id").unwrap().as_u64().unwrap() as u32;
     let mut task: Task = serde_json::from_slice(&body).unwrap();
 
@@ -119,6 +120,7 @@ async fn delete_tasks(
     qry: HashMap<String, Value>,
     _body: Vec<u8>,
 ) {
+    log::debug!("qry={qry:?}");
     let id = qry.get("id").unwrap().as_u64().unwrap() as u32;
 
     let mut conn = get_conn().await.unwrap();
