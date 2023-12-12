@@ -1,15 +1,13 @@
 use std::collections::HashMap;
 
-use serde_json::{Result, Value};
+use serde_json::Value;
 use webhook_flows::{
     create_endpoint, request_handler,
-    route::{delete, get, options, post, put, route, RouteError, Router},
+    route::{delete, get, post, put, Router},
     send_response,
 };
 
-use mysql_async::{
-    prelude::*, Conn, Opts, OptsBuilder, Pool, PoolConstraints, PoolOpts, Result, SslOpts,
-};
+use mysql_async::{prelude::*, Conn, Opts, OptsBuilder, Result, SslOpts};
 
 #[no_mangle]
 #[tokio::main(flavor = "current_thread")]
@@ -44,11 +42,11 @@ fn get_db_url() -> String {
     }
 }
 
-async fn get_conn() -> Result<Conn, mysql_async::Error> {
-    let opts = Opts::from_url(&*get_url())?;
-    let mut builder = OptsBuilder::from_opts(opts);
-    builder.ssl_opts(SslOpts::default());
-    Conn::new(opts).await
+async fn get_conn() -> Result<Conn> {
+    let opts = Opts::from_url(&*get_db_url())?;
+    let builder = OptsBuilder::from_opts(opts);
+    let builder = builder.ssl_opts(SslOpts::default());
+    Conn::new(builder).await
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -58,11 +56,15 @@ struct Task {
     completed: bool,
 }
 
-async fn add_tasks(_headers: Vec<(String, String)>, _qry: HashMap<String, Value>, body: Task) {
+async fn add_tasks(_headers: Vec<(String, String)>, _qry: HashMap<String, Value>, body: Vec<u8>) {
     let mut conn = get_conn().await.unwrap();
 
+    let task: Task = serde_json::from_slice(&body).unwrap();
+
     match r"insert into tasks (id,description,completed) values (:id,:description,:completed)"
-        .with(params! {"id"=>body.id,"description"=>body.description,":completed"=>body.completed})
+        .with(
+            params! {"id"=>task.id,"description"=>&task.description,":completed"=>&task.completed},
+        )
         .ignore(&mut conn)
         .await
     {
@@ -72,7 +74,7 @@ async fn add_tasks(_headers: Vec<(String, String)>, _qry: HashMap<String, Value>
                 String::from("content-type"),
                 String::from("application/json; charset=UTF-8"),
             )],
-            serde_json::to_string(&task).unwrap(),
+            serde_json::to_vec(&task).unwrap(),
         ),
         Err(e) => send_response(
             200,
@@ -80,22 +82,20 @@ async fn add_tasks(_headers: Vec<(String, String)>, _qry: HashMap<String, Value>
                 String::from("content-type"),
                 String::from("application/json; charset=UTF-8"),
             )],
-            serde_json::json!({"err":e.to_string()}).to_string(),
+            serde_json::json!({"err":e.to_string()}).to_string().into(),
         ),
     }
 }
 
-async fn update_tasks(
-    _headers: Vec<(String, String)>,
-    id: u32,
-    _qry: HashMap<String, Value>,
-    mut body: Task,
-) {
-    body.id = id;
+async fn update_tasks(_headers: Vec<(String, String)>, qry: HashMap<String, Value>, body: Vec<u8>) {
+    let id = qry.get("id").unwrap().as_u64().unwrap() as u32;
+    let mut task: Task = serde_json::from_slice(&body).unwrap();
+
+    task.id = id;
     let mut conn = get_conn().await.unwrap();
 
     match r"update tasks set description= :description,completed=:completed where id = :id"
-        .with(params! {"id"=>id,"description"=>body.description,":completed"=>body.completed})
+        .with(params! {"id"=>id,"description"=>&task.description,":completed"=>&task.completed})
         .ignore(&mut conn)
         .await
     {
@@ -105,7 +105,7 @@ async fn update_tasks(
                 String::from("content-type"),
                 String::from("application/json; charset=UTF-8"),
             )],
-            serde_json::to_string(&task).unwrap(),
+            serde_json::to_vec(&task).unwrap(),
         ),
         Err(e) => send_response(
             200,
@@ -113,12 +113,18 @@ async fn update_tasks(
                 String::from("content-type"),
                 String::from("application/json; charset=UTF-8"),
             )],
-            serde_json::json!({"err":e.to_string()}).to_string(),
+            serde_json::json!({"err":e.to_string()}).to_string().into(),
         ),
     }
 }
 
-async fn delete_tasks(_headers: Vec<(String, String)>, id: u32, _qry: HashMap<String, Value>) {
+async fn delete_tasks(
+    _headers: Vec<(String, String)>,
+    qry: HashMap<String, Value>,
+    _body: Vec<u8>,
+) {
+    let id = qry.get("id").unwrap().as_u64().unwrap() as u32;
+
     let mut conn = get_conn().await.unwrap();
 
     match r"delete from tasks where id = :id"
@@ -132,7 +138,7 @@ async fn delete_tasks(_headers: Vec<(String, String)>, id: u32, _qry: HashMap<St
                 String::from("content-type"),
                 String::from("application/json; charset=UTF-8"),
             )],
-            serde_json::to_string(&task).unwrap(),
+            serde_json::json!({"id":id}).to_string().into(),
         ),
         Err(e) => send_response(
             200,
@@ -140,7 +146,7 @@ async fn delete_tasks(_headers: Vec<(String, String)>, id: u32, _qry: HashMap<St
                 String::from("content-type"),
                 String::from("application/json; charset=UTF-8"),
             )],
-            serde_json::json!({"err":e.to_string()}).to_string(),
+            serde_json::json!({"err":e.to_string()}).to_string().into(),
         ),
     }
 }
@@ -164,6 +170,6 @@ async fn query(_headers: Vec<(String, String)>, _qry: HashMap<String, Value>, _b
             String::from("content-type"),
             String::from("application/json; charset=UTF-8"),
         )],
-        serde_json::to_string(&task).unwrap(),
+        serde_json::to_vec(&tasks).unwrap(),
     )
 }
