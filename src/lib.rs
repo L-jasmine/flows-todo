@@ -17,6 +17,7 @@ pub async fn on_deploy() {
 
 #[request_handler]
 async fn handler() {
+    flowsnet_platform_sdk::logger::init();
     let mut router = Router::new();
     router
         .insert("/tasks", vec![get(query), post(add_tasks)])
@@ -62,7 +63,9 @@ fn get_db_url() -> String {
 }
 
 async fn get_conn() -> Result<Conn> {
-    let opts = Opts::from_url(&*get_db_url())?;
+    let db_url = get_db_url();
+    log::debug!("connect db {db_url}");
+    let opts = Opts::from_url(&db_url)?;
     let builder = OptsBuilder::from_opts(opts);
     let builder = builder.ssl_opts(SslOpts::default());
     Conn::new(builder).await
