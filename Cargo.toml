@@ -1,5 +1,5 @@
 [package]
-name = "flows-todo"
+name = "todo-flows"
 version = "0.1.0"
 edition = "2021"
 

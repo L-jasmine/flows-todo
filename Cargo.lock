@@ -355,7 +355,6 @@ dependencies = [
 name = "flows-todo"
 version = "0.1.0"
 dependencies = [
- "lambda-flows",
  "mysql_async_wasi",
  "tokio_wasi",
  "webhook-flows",
@@ -582,19 +581,6 @@ name = "itoa"
 version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1a46d1a171d865aa5f83f92695765caa047a9b4cbae2cbf37dbd613a793fd4c"
-
-[[package]]
-name = "lambda-flows"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "348cf6c1238c3b3e987613a2ac09d3469fbbfaed76bb21c0e6d7871f343e9f85"
-dependencies = [
- "http_req_wasi",
- "lazy_static",
- "serde",
- "serde_json",
- "urlencoding",
-]
 
 [[package]]
 name = "lazy_static"
