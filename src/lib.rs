@@ -85,7 +85,7 @@ async fn add_tasks(_headers: Vec<(String, String)>, _qry: HashMap<String, Value>
     let task: Task = serde_json::from_slice(&body).unwrap();
 
     match r"insert into tasks (description,completed) values (:description,:completed)"
-        .with(params! {"description"=>&task.description,":completed"=>&task.completed})
+        .with(params! {"description"=>&task.description,"completed"=>&task.completed})
         .ignore(&mut conn)
         .await
     {
@@ -116,7 +116,7 @@ async fn update_tasks(_headers: Vec<(String, String)>, qry: HashMap<String, Valu
     let mut conn = get_conn().await.unwrap();
 
     match r"update tasks set description= :description,completed=:completed where id = :id"
-        .with(params! {"id"=>id,"description"=>&task.description,":completed"=>&task.completed})
+        .with(params! {"id"=>id,"description"=>&task.description,"completed"=>&task.completed})
         .ignore(&mut conn)
         .await
     {
